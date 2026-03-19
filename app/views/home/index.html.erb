@@ -1,0 +1,17 @@
+<h1>Zip Weather-app</h1>
+
+<%= form_with(url: home_search_path, method: :post) do |form| %>
+  <div>
+    <%= form.label :zip_code %>
+    <%= form.text_field :zip_code %>
+  </div>
+  <div>
+    <%= form.submit "enviar" %>  
+  </div>
+
+  
+  <% end %>
+  <% if @zip_code %>
+  <div>Código Postal: <%= @zip_code %> </div>
+  <% end %>
+</div>
