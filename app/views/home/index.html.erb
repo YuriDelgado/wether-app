@@ -1,54 +1,36 @@
 <h1>Zip Weather-app</h1>
 
-<%= form_with url: home_search_path, method: :post do |f| %>
+<%= form_with url: home_search_path, method: :post, local: true, data: { turbo: false } do |f| %>
 
 <%= f.label :zipcode, "Código Postal" %>
-
-<%= f.text_field :zipcode %>
-
+<%= f.text_field :zipcode,
+      required: true,
+      pattern: "[0-9]{5}",
+      title: "Ingresa 5 dígitos" %>
 <%= f.submit "Consultar" %>
 
 <% end %>
 
 
 <% if flash[:error] %>
-
-<p style="color:red">
-<%= flash[:error] %>
-</p>
-
+  <p style="color:red"><%= flash[:error] %></p>
 <% end %>
 
-
-
+<% if @weather&.success? %>
 <h2>Información de ubicación</h2>
-
-<p><b>Código postal:</b> <%= @zipcode %></p>
-
-<p><b>Ciudad:</b> <%= @city %></p>
-
-<p><b>Latitud:</b> <%= @lat %></p>
-
-<p><b>Longitud:</b> <%= @lon %></p>
+<p><b>Código postal:</b> <%= @weather.zipcode %></p>
+<p><b>Colonia:</b> <%= @weather.neighborhood %></p>
+<p><b>Latitud:</b> <%= @weather.lat %></p>
+<p><b>Longitud:</b> <%= @weather.lon %></p>
 
 
 <h2>Clima actual</h2>
+<p><b>Descripción:</b> <%= @weather.description %></p>
+<p><b>Temperatura:</b> <%= @weather.temp %> °C</p>
+<p><b>Sensación térmica:</b> <%= @weather.feels_like %> °C</p>
+<p><b>Amanecer:</b><%= @weather.sunrise %></p>
+<p><b>Atardecer:</b><%= @weather.sunset %></p>
 
-<p><b>Descripción:</b> <%= @description %></p>
+<p><b>Zona horaria:</b>UTC <%= @weather.timezone %></p>
 
-<p><b>Temperatura:</b> <%= @temp %> °C</p>
-
-<p><b>Sensación térmica:</b> <%= @feels_like %> °C</p>
-
-<p><b>Amanecer:</b>
-<%= @sunrise&.strftime("%H:%M") %>
-</p>
-
-<p><b>Atardecer:</b>
-<%= @sunset&.strftime("%H:%M") %>
-</p>
-
-<p><b>Zona horaria:</b>
-UTC <%= @timezone %>
-</p>
-
+<% end %>
