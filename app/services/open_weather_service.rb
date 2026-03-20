@@ -1,40 +1,48 @@
-require "net/http"
-
 class OpenWeatherService
-  BASE_URL = "https://api.openweathermap.org"
-  API_KEY = ENV.fetch("OPENWEATHER_API_KEY")
-
-  def self.fetch_location(zipcode, country = "MX")
-    uri = URI("#{BASE_URL}/geo/1.0/zip?zip=#{zipcode},#{country}&appid=#{API_KEY}")
-    response = Net::HTTP.start(
-      uri.host,
-      uri.port,
-      use_ssl: true
-    ) do |http|
-      request = Net::HTTP::Get.new(uri)
-
-      http.request(request)
-    end
-
-    return nil unless response.is_a?(Net::HTTPSuccess)
-
-    JSON.parse(response.body, symbolize_names: true)
+  def initialize(client = OpenWeatherClient.new)
+    @client = client
   end
 
-  def self.fetch_weather(lat, lon, lang = "es")
-    uri = URI("#{BASE_URL}/data/2.5/weather?lat=#{lat}&lon=#{lon}&appid=#{API_KEY}&units=metric&lang=#{lang}")
-    response = Net::HTTP.start(
-      uri.host,
-      uri.port,
-      use_ssl: true
-    ) do |http|
-      request = Net::HTTP::Get.new(uri)
 
-      http.request(request)
-    end
+  def weather_by_zip(zipcode)
+    return WeatherResult.error(
+      "Formato inválido"
+    ) unless zipcode.match?(/\A\d{5}\z/)
 
-    return nil unless response.is_a?(Net::HTTPSuccess)
+    location = @client.fetch_location(zipcode)
 
-    JSON.parse(response.body, symbolize_names: true)
+    return WeatherResult.new(
+      error: "Código postal inválido"
+    ) unless location
+
+    weather = @client.fetch_weather(
+      lat: location[:lat],
+      lon: location[:lon]
+    )
+
+    return WeatherResult.new(
+      error: "No se pudo obtener el clima"
+    ) unless weather
+
+    build_result(location, weather)
+  end
+
+  private
+
+  def build_result(location, weather)
+    WeatherResult.new(
+      data: {
+        zipcode: location[:zip],
+        neighborhood: location[:name],
+        lat: location[:lat],
+        lon: location[:lon],
+        description: weather.dig(:weather, 0, :description),
+        temp: weather.dig(:main, :temp),
+        feels_like: weather.dig(:main, :feels_like),
+        sunrise: Time.at(weather.dig(:sys, :sunrise)).strftime("%H:%M"),
+        sunset: Time.at(weather.dig(:sys, :sunset)).strftime("%H:%M"),
+        timezone: weather[:timezone] / 3600
+      }
+    )
   end
 end

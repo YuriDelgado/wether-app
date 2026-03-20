@@ -3,35 +3,20 @@ class HomeController < ApplicationController
   end
 
   def search
-    zipcode = params[:zipcode]
+    zipcode = params[:zipcode]&.strip
+    return redirect_with_error(
+      "Código postal requerido"
+    ) if zipcode.blank?
 
-    location = OpenWeatherService.fetch_location(zipcode)
+    result = OpenWeatherService.new.weather_by_zip(zipcode)
 
-    if location.nil?
-      flash[:error] = "Código postal inválido"
+    unless result&.success?
+      flash[:error] = result&.error || "Unknown error"
       return redirect_to root_path
     end
 
-    @zipcode = zipcode
-    @lat = location[:lat]
-    @lon = location[:lon]
-    @city = location[:name]
-
-    weather = OpenWeatherService.fetch_weather(@lat, @lon)
-
-    if weather.nil?
-      flash[:error] = "No se pudo obtener el clima"
-      return redirect_to root_path
-    end
-
-    @description = weather[:weather][0][:description]
-    @temp = weather[:main][:temp]
-    @feels_like = weather[:main][:feels_like]
-
-    @sunrise = Time.at(weather[:sys][:sunrise])
-    @sunset = Time.at(weather[:sys][:sunset])
-
-    @timezone = weather[:timezone] / 3600
+    @weather = result
+    flash[:weather] = @weather
 
     render :index
   end
